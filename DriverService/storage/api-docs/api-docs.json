@@ -1,0 +1,214 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Driver Service API",
+        "version": "1.0"
+    },
+    "paths": {
+        "/api/drivers": {
+            "get": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "List all drivers",
+                "operationId": "90f1e2d7ba23baa1e136288ed235666c",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Create a new driver",
+                "operationId": "6bdf167696d642223e0d27e88a0b4896",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "license_number": {
+                                        "type": "string",
+                                        "example": "LIC123456"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "available"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Driver created"
+                    },
+                    "400": {
+                        "description": "Invalid user or not a driver"
+                    }
+                }
+            }
+        },
+        "/api/drivers/assign": {
+            "post": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Assign a driver to a vehicle",
+                "operationId": "881257835036eb5ae119d221f1015f1f",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "driver_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "vehicle_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Driver assigned to vehicle"
+                    },
+                    "400": {
+                        "description": "Invalid driver or vehicle"
+                    },
+                    "404": {
+                        "description": "Driver or vehicle not found"
+                    }
+                }
+            }
+        },
+        "/api/drivers/{id}": {
+            "get": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Get a driver by ID",
+                "operationId": "1de6dd3c4dadedd666e6f9e425fd3db4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success operation"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Update a driver",
+                "operationId": "de2a8f73505116569bbec3fa525db6bd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "license_number": {
+                                        "type": "string",
+                                        "example": "LIC123456"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "example": "available"
+                                    },
+                                    "vehicle_id": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Driver updated"
+                    },
+                    "400": {
+                        "description": "Invalid user or vehicle"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Delete a driver",
+                "operationId": "c32adc70b84b5c4d5f214e60757aaee3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Driver deleted"
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Drivers",
+            "description": "Drivers"
+        }
+    ]
+}
