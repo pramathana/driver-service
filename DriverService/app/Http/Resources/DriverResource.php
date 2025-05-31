@@ -14,8 +14,8 @@ class DriverResource extends JsonResource
             'license_number' => $this->license_number,
             'status' => $this->status,
             'vehicle_id' => $this->vehicle_id,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'created_at' => $this->created_at ? $this->created_at->addHours(7)->toDateTimeString() : null,
+            'updated_at' => $this->updated_at ? $this->updated_at->addHours(7)->toDateTimeString() : null,
         ];
     }
 }

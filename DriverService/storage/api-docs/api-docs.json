@@ -52,7 +52,7 @@
                         "description": "Driver created"
                     },
                     "400": {
-                        "description": "Invalid user or not a driver"
+                        "description": "Invalid input"
                     }
                 }
             }
@@ -91,7 +91,7 @@
                         "description": "Invalid driver or vehicle"
                     },
                     "404": {
-                        "description": "Driver or vehicle not found"
+                        "description": "Driver not found"
                     }
                 }
             }
@@ -101,7 +101,7 @@
                 "tags": [
                     "Drivers"
                 ],
-                "summary": "Get a driver by ID",
+                "summary": "Get driver by ID",
                 "operationId": "1de6dd3c4dadedd666e6f9e425fd3db4",
                 "parameters": [
                     {
@@ -115,10 +115,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Success operation"
+                        "description": "Successful operation"
                     },
                     "404": {
-                        "description": "Not found"
+                        "description": "Driver not found"
                     }
                 }
             },
@@ -171,7 +171,7 @@
                         "description": "Driver updated"
                     },
                     "400": {
-                        "description": "Invalid user or vehicle"
+                        "description": "Invalid input"
                     },
                     "404": {
                         "description": "Driver not found"
