@@ -35,8 +35,9 @@ class DriverController extends Controller
      *     tags={"Drivers"},
      *     @OA\RequestBody(
      *         @OA\JsonContent(
-     *             @OA\Property(property="user_id", type="integer", example=1),
      *             @OA\Property(property="license_number", type="string", example="LIC123456"),
+     *             @OA\Property(property="name", type="string", example="Joko Nawar"),
+     *             @OA\Property(property="email", type="string", example="JagoNawar@yopmail.com"),
      *             @OA\Property(property="status", type="string", example="available")
      *         )
      *     ),
@@ -48,8 +49,9 @@ class DriverController extends Controller
     {
         try {
             $validated = $request->validate([
-                'user_id' => 'required|integer|unique:drivers',
                 'license_number' => 'required|string|unique:drivers|max:50',
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:drivers|max:255',
                 'status' => 'nullable|string|in:available,on_duty,unavailable',
             ]);
 
@@ -65,17 +67,19 @@ class DriverController extends Controller
     /**
      * @OA\Post(
      *     path="/api/drivers/assign",
-     *     summary="Assign a driver to a vehicle",
+     *     summary="Assign an available driver to an available vehicle",
+     *     description="Automatically finds an available vehicle from the Vehicle Service, assigns it to the driver, and updates the vehicle status to InUse",
      *     tags={"Drivers"},
      *     @OA\RequestBody(
      *         @OA\JsonContent(
-     *             @OA\Property(property="driver_id", type="integer", example=1),
-     *             @OA\Property(property="vehicle_id", type="integer", example=1)
+     *             @OA\Property(property="driver_id", type="integer", example=1)
      *         )
      *     ),
      *     @OA\Response(response=200, description="Driver assigned to vehicle"),
-     *     @OA\Response(response=400, description="Invalid driver or vehicle"),
-     *     @OA\Response(response=404, description="Driver not found")
+     *     @OA\Response(response=200, description="Driver assigned to vehicle successfully"),
+     *     @OA\Response(response=400, description="Invalid driver or no available vehicles"),
+     *     @OA\Response(response=404, description="Driver not found"),
+     *     @OA\Response(response=500, description="Failed to update vehicle status")
      * )
      */
     public function assign(Request $request)
@@ -83,7 +87,6 @@ class DriverController extends Controller
         try {
             $validated = $request->validate([
                 'driver_id' => 'required|integer',
-                'vehicle_id' => 'required|integer',
             ]);
 
             $driver = Driver::find($validated['driver_id']);
@@ -94,15 +97,54 @@ class DriverController extends Controller
                 return response()->json(['error' => 'Driver is not available'], 400);
             }
 
+            // Get available vehicles from Vehicle Service
+            $client = new \GuzzleHttp\Client(['base_uri' => 'http://localhost:8000']); // Change base_uri to your vehicle service host
+            $response = $client->get('/api/vehicles');
+            $vehicles = json_decode($response->getBody()->getContents(), true);
+            $availableVehicle = null;
+            if (isset($vehicles['data']) && is_array($vehicles['data'])) {
+                foreach ($vehicles['data'] as $vehicle) {
+                    if (isset($vehicle['status']) && strtolower($vehicle['status']) === 'available') {
+                        $availableVehicle = $vehicle;
+                        break;
+                    }
+                }
+            }
+            if (!$availableVehicle) {
+                return response()->json(['error' => 'No available vehicle found'], 400);
+            }
+
+            // Assign vehicle to driver
             $driver->update([
-                'vehicle_id' => $validated['vehicle_id'],
+                'assigned_vehicle' => $availableVehicle['id'],
                 'status' => 'on_duty'
             ]);
+
+            // Update vehicle status to InUse in Vehicle Service
+            $updateResponse = $client->put('/api/vehicles/' . $availableVehicle['id'], [
+                'json' => [
+                    'type' => $availableVehicle['type'],
+                    'plate_number' => $availableVehicle['plate_number'],
+                    'status' => 'InUse',
+                ]
+            ]);
+            
+            // Check if vehicle was updated successfully
+            $updateResult = json_decode($updateResponse->getBody()->getContents(), true);
+            if (!isset($updateResult['status']) || $updateResult['status'] !== 'success') {
+                // Revert driver changes if vehicle update fails
+                $driver->update([
+                    'assigned_vehicle' => null,
+                    'status' => 'available'
+                ]);
+                return response()->json(['error' => 'Failed to update vehicle status'], 500);
+            }
+
             return new DriverResource($driver);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['error' => $e->errors()], 400);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to assign driver'], 500);
+            return response()->json(['error' => 'Failed to assign driver: ' . $e->getMessage()], 500);
         }
     }
 
@@ -136,10 +178,11 @@ class DriverController extends Controller
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\RequestBody(
      *         @OA\JsonContent(
-     *             @OA\Property(property="user_id", type="integer", example=1),
      *             @OA\Property(property="license_number", type="string", example="LIC123456"),
+     *             @OA\Property(property="name", type="string", example="Joko Nawar"),
+     *             @OA\Property(property="email", type="string", example="JagoNawar@yopmail.com"),
      *             @OA\Property(property="status", type="string", example="available"),
-     *             @OA\Property(property="vehicle_id", type="integer", example=1, nullable=true)
+     *             @OA\Property(property="assigned_vehicle", type="string", example="VEH123", nullable=true)
      *         )
      *     ),
      *     @OA\Response(response=200, description="Driver updated"),
@@ -152,10 +195,11 @@ class DriverController extends Controller
         try {
             $driver = Driver::findOrFail($id);
             $validated = $request->validate([
-                'user_id' => 'required|integer|unique:drivers,user_id,' . $id,
                 'license_number' => 'required|string|unique:drivers,license_number,' . $id . '|max:50',
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:drivers,email,' . $id . '|max:255',
                 'status' => 'nullable|string|in:available,on_duty,unavailable',
-                'vehicle_id' => 'nullable|integer',
+                'assigned_vehicle' => 'nullable|string|max:255',
             ]);
 
             $driver->update($validated);

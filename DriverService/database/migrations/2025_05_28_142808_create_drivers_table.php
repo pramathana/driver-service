@@ -10,10 +10,11 @@ class CreateDriversTable extends Migration
     {
         Schema::create('drivers', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id')->unique();
             $table->string('license_number')->unique();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('assigned_vehicle')->nullable();
             $table->string('status')->default('available'); // available, on_duty, unavailable
-            $table->unsignedBigInteger('vehicle_id')->nullable();
             $table->timestamps();
         });
     }
