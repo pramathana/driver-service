@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Driver;
 use App\Http\Resources\DriverResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @OA\Info(title="Driver Service API", version="1.0")
@@ -336,7 +337,7 @@ class DriverController extends Controller
             $updateResult = json_decode($updateResponse->getBody()->getContents(), true);
             return isset($updateResult['status']) && $updateResult['status'] === 'success';
         } catch (\Exception $e) {
-            \Log::error('Failed to update vehicle status: ' . $e->getMessage());
+            Log::error('Failed to update vehicle status: ' . $e->getMessage());
             return false;
         }
     }
