@@ -10,10 +10,11 @@ class DriverResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user_id' => $this->user_id,
             'license_number' => $this->license_number,
+            'name' => $this->name,
+            'email' => $this->email,
             'status' => $this->status,
-            'vehicle_id' => $this->vehicle_id,
+            'assigned_vehicle' => $this->assigned_vehicle,
             'created_at' => $this->created_at ? $this->created_at->addHours(7)->toDateTimeString() : null,
             'updated_at' => $this->updated_at ? $this->updated_at->addHours(7)->toDateTimeString() : null,
         ];

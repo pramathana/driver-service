@@ -53,19 +53,19 @@ class DriverController extends Controller
      * @OA\Post(
      *     path="/api/drivers",
      *     summary="Create a new driver",
-     *     description="Creates a driver and registers a user account in the Auth Service with role 'pengemudi'",
+     *     description="Creates a new driver record",
      *     tags={"Drivers"},
      *     @OA\RequestBody(
      *         @OA\JsonContent(
-     *             @OA\Property(property="license_number", type="string", example="LIC123456", description="Will be used as the password for Auth Service"),
+     *             @OA\Property(property="license_number", type="string", example="LIC123456"),
      *             @OA\Property(property="name", type="string", example="Joko Nawar"),
      *             @OA\Property(property="email", type="string", example="JagoNawar@yopmail.com"),
      *             @OA\Property(property="status", type="string", example="available")
      *         )
      *     ),
-     *     @OA\Response(response=201, description="Driver created and user registered in Auth Service"),
+     *     @OA\Response(response=201, description="Driver created successfully"),
      *     @OA\Response(response=400, description="Invalid input"),
-     *     @OA\Response(response=500, description="Failed to create driver or register with Auth Service")
+     *     @OA\Response(response=500, description="Failed to create driver")
      * )
      */
     public function store(Request $request)
@@ -81,45 +81,10 @@ class DriverController extends Controller
             // Create driver record in database
             $driver = Driver::create($validated);
             
-            // Generate username from name (remove spaces and add random digits)
-            $username = strtolower(str_replace(' ', '', $validated['name'])) . rand(100, 999);
-            
-            // Register user with Auth Service
-            $client = $this->getAuthServiceClient();
-            $authResponse = $client->post('/auth/register', [
-                'json' => [
-                    'fullName' => $validated['name'],
-                    'email' => $validated['email'],
-                    'username' => $username,
-                    'role' => 'pengemudi',
-                    'password' => $validated['license_number'],
-                    'confirmPassword' => $validated['license_number']
-                ]
-            ]);
-            
-            // Check auth service response
-            $authResult = json_decode($authResponse->getBody()->getContents(), true);
-            if ($authResponse->getStatusCode() !== 200) {
-                // If auth registration fails, delete the driver record
-                $driver->delete();
-                return response()->json(['error' => 'Failed to register driver with Auth Service'], 500);
-            }
-            
             return new DriverResource($driver);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['error' => $e->errors()], 400);
-        } catch (\GuzzleHttp\Exception\RequestException $e) {
-            // If the auth service request fails
-            if (isset($driver)) {
-                $driver->delete();
-            }
-            $errorMessage = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
-            return response()->json(['error' => 'Auth Service Error: ' . $errorMessage], 500);
         } catch (\Exception $e) {
-            // If driver was created but something else failed, delete the driver
-            if (isset($driver)) {
-                $driver->delete();
-            }
             return response()->json(['error' => 'Failed to create driver: ' . $e->getMessage()], 500);
         }
     }
@@ -127,12 +92,13 @@ class DriverController extends Controller
     /**
      * @OA\Post(
      *     path="/api/drivers/assign",
-     *     summary="Assign an available driver to an available vehicle",
-     *     description="Automatically finds an available vehicle from the Vehicle Service, assigns it to the driver, and updates the vehicle status to InUse",
+     *     summary="Assign an available driver to a specific vehicle",
+     *     description="Assigns a specific vehicle to the driver and updates the vehicle status to InUse",
      *     tags={"Drivers"},
      *     @OA\RequestBody(
      *         @OA\JsonContent(
-     *             @OA\Property(property="driver_id", type="integer", example=1)
+     *             @OA\Property(property="driver_id", type="integer", example=1),
+     *             @OA\Property(property="vehicle_id", type="integer", example=1)
      *         )
      *     ),
      *     @OA\Response(response=200, description="Driver assigned to vehicle successfully"),
@@ -146,6 +112,7 @@ class DriverController extends Controller
         try {
             $validated = $request->validate([
                 'driver_id' => 'required|integer',
+                'vehicle_id' => 'required|integer',
             ]);
 
             $driver = Driver::find($validated['driver_id']);
@@ -156,34 +123,28 @@ class DriverController extends Controller
                 return response()->json(['error' => 'Driver is not available'], 400);
             }
 
-            // Get available vehicles from Vehicle Service
+            // Check if the vehicle exists and is available
             $client = $this->getVehicleServiceClient();
-            $response = $client->get('/api/vehicles');
-            $vehicles = json_decode($response->getBody()->getContents(), true);
+            $response = $client->get('/api/vehicles/' . $validated['vehicle_id']);
+            $vehicle = json_decode($response->getBody()->getContents(), true);
             
-            // Find the first available vehicle
-            $availableVehicle = null;
-            if (isset($vehicles['data']) && is_array($vehicles['data'])) {
-                foreach ($vehicles['data'] as $vehicle) {
-                    if (isset($vehicle['status']) && strtolower($vehicle['status']) === 'available') {
-                        $availableVehicle = $vehicle;
-                        break;
-                    }
-                }
+            if (!isset($vehicle['data'])) {
+                return response()->json(['error' => 'Vehicle not found'], 404);
             }
             
-            if (!$availableVehicle) {
-                return response()->json(['error' => 'No available vehicle found'], 400);
+            $vehicleData = $vehicle['data'];
+            if (strtolower($vehicleData['status']) !== 'available') {
+                return response()->json(['error' => 'Vehicle is not available'], 400);
             }
 
             // Assign vehicle to driver
             $driver->update([
-                'assigned_vehicle' => $availableVehicle['id'],
+                'assigned_vehicle' => $validated['vehicle_id'],
                 'status' => 'on_duty'
             ]);
 
             // Update vehicle status to InUse in Vehicle Service
-            $success = $this->updateVehicleStatus($availableVehicle['id'], 'InUse');
+            $success = $this->updateVehicleStatus($validated['vehicle_id'], 'InUse');
             
             if (!$success) {
                 // Revert driver changes if vehicle update fails
