@@ -23,19 +23,24 @@
                     "Drivers"
                 ],
                 "summary": "Create a new driver",
+                "description": "Creates a new driver record",
                 "operationId": "6bdf167696d642223e0d27e88a0b4896",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "user_id": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
                                     "license_number": {
                                         "type": "string",
                                         "example": "LIC123456"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Joko Nawar"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "JagoNawar@yopmail.com"
                                     },
                                     "status": {
                                         "type": "string",
@@ -49,10 +54,13 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Driver created"
+                        "description": "Driver created successfully"
                     },
                     "400": {
                         "description": "Invalid input"
+                    },
+                    "500": {
+                        "description": "Failed to create driver"
                     }
                 }
             }
@@ -62,7 +70,8 @@
                 "tags": [
                     "Drivers"
                 ],
-                "summary": "Assign a driver to a vehicle",
+                "summary": "Assign an available driver to a specific vehicle",
+                "description": "Assigns a specific vehicle to the driver and updates the vehicle status to InUse",
                 "operationId": "881257835036eb5ae119d221f1015f1f",
                 "requestBody": {
                     "content": {
@@ -85,13 +94,16 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Driver assigned to vehicle"
+                        "description": "Driver assigned to vehicle successfully"
                     },
                     "400": {
-                        "description": "Invalid driver or vehicle"
+                        "description": "Invalid driver or no available vehicles"
                     },
                     "404": {
                         "description": "Driver not found"
+                    },
+                    "500": {
+                        "description": "Failed to update vehicle status"
                     }
                 }
             }
@@ -143,21 +155,25 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "user_id": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
                                     "license_number": {
                                         "type": "string",
                                         "example": "LIC123456"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Joko Nawar"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "JagoNawar@yopmail.com"
                                     },
                                     "status": {
                                         "type": "string",
                                         "example": "available"
                                     },
-                                    "vehicle_id": {
-                                        "type": "integer",
-                                        "example": 1,
+                                    "assigned_vehicle": {
+                                        "type": "string",
+                                        "example": "VEH123",
                                         "nullable": true
                                     }
                                 },
