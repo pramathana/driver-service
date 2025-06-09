@@ -19,7 +19,8 @@ class DriverController extends Controller
      */
     private function getAuthServiceClient()
     {
-        return new \GuzzleHttp\Client(['base_uri' => 'http://localhost:3001']);
+        $baseUri = env('AUTH_SERVICE_URL', 'http://localhost:3000');
+        return new \GuzzleHttp\Client(['base_uri' => $baseUri]);
     }
 
     /**
@@ -29,7 +30,8 @@ class DriverController extends Controller
      */
     private function getVehicleServiceClient()
     {
-        return new \GuzzleHttp\Client(['base_uri' => 'http://localhost:8000']);
+        $baseUri = env('VEHICLE_SERVICE_URL', 'http://localhost:8000');
+        return new \GuzzleHttp\Client(['base_uri' => $baseUri]);
     }
 
     /**
